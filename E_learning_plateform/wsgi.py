@@ -8,9 +8,7 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 """
 
 import os
-
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'online_banking_system.settings')
-
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'E_learning_plateform.settings')
 application = get_wsgi_application()

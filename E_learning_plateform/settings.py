@@ -57,7 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'online_banking_system.urls'
+ROOT_URLCONF = 'E_learning_plateform.urls'
 
 TEMPLATES = [
     {
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'online_banking_system.wsgi.application'
+WSGI_APPLICATION = 'E_learning_plateform.wsgi.application'
 
 
 # Database
