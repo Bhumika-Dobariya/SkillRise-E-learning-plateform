@@ -110,19 +110,22 @@ def delete_student_course(request):
 def create_course(request):
     serializer = CourseSerializer(data=request.data)
     if serializer.is_valid():
-      
+     
         data = serializer.validated_data
-        price = data['price']
+        price = data.get('price')
         discount_percent = data.get('discount_percent')
 
+       
         if discount_percent is not None:
             cal_discount = (price * discount_percent) / 100
             discount_price = price - cal_discount
         else:
             discount_price = price
-
+        
         course = serializer.save(discount_price=discount_price)
+        
         return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

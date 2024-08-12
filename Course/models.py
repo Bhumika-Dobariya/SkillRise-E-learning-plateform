@@ -6,7 +6,7 @@ from django.utils import timezone
 class StudentCourse(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='student_courses')
-    student = models.ForeignKey('User.User', on_delete=models.CASCADE, related_name='student_courses')
+    student = models.ForeignKey('student.Student', on_delete=models.CASCADE, related_name='student_courses')
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -17,12 +17,11 @@ class StudentCourse(models.Model):
 
 
 
-
 class Course(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     category = models.ForeignKey('category.Category', on_delete=models.CASCADE, related_name='courses')  
     instructor = models.ForeignKey('instructor.Instructor', on_delete=models.CASCADE, related_name='courses')
-    student = models.ForeignKey('User.User', on_delete=models.CASCADE, related_name='courses', blank=True, null=True)
+    student = models.ForeignKey('student.Student', on_delete=models.CASCADE, related_name='courses', blank=True, null=True)
     name = models.CharField(max_length=255)
     description = models.TextField()
     duration = models.DurationField() 

@@ -1,8 +1,9 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import User
-from .serialization import CustomUserSerializer
+from .models import User,BlacklistedToken
+from .serialization import UserSerializer
 from rest_framework.exceptions import NotFound
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -10,20 +11,26 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import User, OTP
-from .serialization import OTPRequestSerializer, OTPVerificationRequestSerializer,CustomUserSerializer
+from .serialization import OTPRequestSerializer, OTPVerificationRequestSerializer
 import random
 import uuid
 from datetime import timedelta
 from django.contrib.auth.hashers import check_password
 from django.http import HttpResponse
 from .utils.token import get_token,decode_token_user_id
-from django.contrib.auth import authenticate
 import bcrypt
-import jwt
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from jose import JWTError
+from .permission import IsAdmin, IsInstructor, IsStudent
+from django.core.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed
 
+
+@api_view(['GET'])
+@permission_classes([IsAdmin])
+def admin_only_view(request):
+    return Response({"message": "Welcome, Admin!"}, status=status.HTTP_200_OK)
 
 
 
@@ -35,7 +42,7 @@ def create_user(request):
     data["password"] = bcrypt.hashpw(
         data["password"].encode("utf-8"), bcrypt.gensalt()
     ).decode("utf-8")
-    serializer = CustomUserSerializer(data=data)
+    serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -126,8 +133,10 @@ def verify_otp(request):
 
 #___________________logging___________________
 
+
+
 @api_view(["POST"])
-def logging(request):
+def login_or_register(request):
     uname = request.data.get("uname")
     password = request.data.get("password")
     
@@ -135,43 +144,72 @@ def logging(request):
         return Response({"message": "Username and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+      
         user = User.objects.get(name=uname)
     except User.DoesNotExist:
         try:
             user = User.objects.get(email=uname)
         except User.DoesNotExist:
-            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    # Check password
+            
+            hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
+            user = User.objects.create(name=uname, email=uname, password=hashed_password)
+      
+            token = get_token(user)
+            role = user.role
+            return Response({
+                "message": "User registered and logged in successfully",
+                "token": token,
+                "role": role
+            }, status=status.HTTP_201_CREATED)
+ 
     if bcrypt.checkpw(password.encode("utf-8"), user.password.encode("utf-8")):
-        if not user.is_verified:
-            return Response({"message": "User not verified"}, status=status.HTTP_403_FORBIDDEN)
-
-        token = get_token(user.id)
-        return Response({"token": token}, status=status.HTTP_200_OK)
+        if not user.is_active:
+            return Response({"message": "User account is inactive"}, status=status.HTTP_403_FORBIDDEN)
+        token = get_token(user)
+        role = user.role
+        
+        return Response({
+            "token": token,
+            "role": role  
+        }, status=status.HTTP_200_OK)
     else:
         return Response({"message": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
     
+    
+
+
+@api_view(['GET'])
+@permission_classes([IsInstructor])
+def instructor_only_view(request):
+    return Response({"message": "Welcome, Instructor!"}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsStudent])
+def student_only_view(request):
+    return Response({"message": "Welcome, Student!"}, status=status.HTTP_200_OK)  
+
+
 
 #_______________ get_user_by_id __________________
 
 @api_view(["GET"])
+@permission_classes([IsAdmin])
 def get_user_by_id(request, id):
     try:
-        user = User.objects.get(pk=id)
+        user = User.objects.get(pk=id, is_active=True, is_deleted=False)
     except User.DoesNotExist:
         raise NotFound(detail="User not found")
     
-    serializer = CustomUserSerializer(user)
+    serializer = UserSerializer(user)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 
 #__________________ get_user_by_token ________________
 
 @api_view(['GET'])
+@permission_classes([IsAdmin])
 def get_user_by_token(request):
-
     token = request.headers.get('Authorization')
     if not token:
         return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -180,34 +218,36 @@ def get_user_by_token(request):
     if not user_id:
         return Response({"error": "Invalid token or user ID extraction failed"}, status=status.HTTP_400_BAD_REQUEST)
 
+ 
     db_user = User.objects.filter(id=user_id, is_active=True, is_verified=True, is_deleted=False).first()
     if db_user is None:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = CustomUserSerializer(db_user)
-    serialized_data = serializer.data
-    return Response(serialized_data)
+    serializer = UserSerializer(db_user)
+    return Response(serializer.data)
 
 
 #_______________ get all user __________________
 
 @api_view(["GET"])
+@permission_classes([IsAdmin])
 def get_all_user(request):
     users = User.objects.all()
-    serializer = CustomUserSerializer(users, many=True)
+    serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
 
 #______________ update user by id ___________________
 
 @api_view(['PUT'])
+@permission_classes([IsAdmin])
 def update_user(request, id):
     try:
-        user = User.objects.get(pk=id)
+        user = User.objects.get(pk=id, is_active=True, is_deleted=False)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = CustomUserSerializer(user, data=request.data, partial=False)
+    serializer = UserSerializer(user, data=request.data, partial=False)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
@@ -218,6 +258,7 @@ def update_user(request, id):
 #__________________ update_user_by_token ___________________
 
 @api_view(['PUT'])
+@permission_classes([IsAdmin])
 def update_user_by_token(request):
     token = request.headers.get('Authorization')
     
@@ -230,14 +271,14 @@ def update_user_by_token(request):
         return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
-        user = User.objects.get(pk=user_id_from_token)
+        user = User.objects.get(pk=user_id_from_token, is_active=True, is_verified=True, is_deleted=False)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
     if user_id_from_token != str(user.id):
         return Response({'error': 'Unauthorized to update this user'}, status=status.HTTP_403_FORBIDDEN)
     
-    serializer = CustomUserSerializer(user, data=request.data, partial=True)
+    serializer = UserSerializer(user, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
@@ -249,19 +290,23 @@ def update_user_by_token(request):
 #____________delete user by id _________________
 
 @api_view(['DELETE'])
+@permission_classes([IsAdmin])
 def user_delete(request, id):
     try:
-        user = User.objects.get(pk=id)
+        user = User.objects.get(pk=id, is_active=True, is_deleted=False)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    user.delete()
-    return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    user.is_deleted = True
+    user.save()
+    return Response({'message': 'User marked as deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 #___________________ delete user by token_____________________
 
 @api_view(['DELETE'])
+@permission_classes([IsAdmin])
 def user_delete_by_token(request):
     token = request.headers.get('Authorization')
     
@@ -274,15 +319,17 @@ def user_delete_by_token(request):
         return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
-        user_to_delete = User.objects.get(pk=user_id_from_token)
+        user_to_delete = User.objects.get(pk=user_id_from_token, is_active=True, is_verified=True, is_deleted=False)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
     if user_id_from_token != str(user_to_delete.id):
         return Response({'error': 'Unauthorized to delete this user'}, status=status.HTTP_403_FORBIDDEN)
     
-    user_to_delete.delete()
-    return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    user_to_delete.is_deleted = True
+    user_to_delete.save()
+    return Response({'message': 'User marked as deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 #__________________forget password by token____________________
@@ -319,6 +366,7 @@ def forget_password(request):
     return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
 
 
+
 #___________________reset password by token____________________
 
 @api_view(['PUT'])
@@ -350,3 +398,29 @@ def reset_password_by_token(request):
     db_user.save()
 
     return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
+
+
+
+
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    try:
+        access_token = request.data.get('access_token')
+        if not access_token:
+            return Response({"error": "Access token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if BlacklistedToken.objects.filter(token=access_token).exists():
+            return Response({"message": "Token already blacklisted"}, status=status.HTTP_400_BAD_REQUEST)
+
+        BlacklistedToken.objects.create(
+            token=access_token,
+            blacklisted_at=timezone.now()
+        )
+
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,8 +1,10 @@
 from django.db import models
 from django.utils import timezone
+import uuid
+
 
 class Lesson(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  
     title = models.CharField(max_length=255)
     content = models.TextField()
     module = models.ForeignKey('Module.Module', on_delete=models.CASCADE, related_name='lessons')

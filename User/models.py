@@ -1,37 +1,27 @@
 from django.db import models
 import uuid
+from django.utils import timezone
 
 
 class User(models.Model):
-    USER_TYPE_CHOICES = (
-        ('student', 'Student'),
-        ('instructor', 'Instructor'),
-        ('admin', 'Admin'),
-    )
-
-    GENDER_CHOICES = [
-        ('Male', 'Male'),
-        ('Female', 'Female'),
-        ('Other', 'Other'),
+    ROLE_CHOICES = [
+        ('Admin', 'Admin'),
+        ('Student', 'Student'),
+        ('Instructor', 'Instructor'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user_type = models.CharField(max_length=50, choices=USER_TYPE_CHOICES, default='student')
-    email = models.EmailField(unique=True, blank=False)
-    name = models.CharField(max_length=100)
-    password = models.CharField(max_length=128)
-    date_of_birth = models.DateField(null=True, blank=True)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
-    address = models.TextField(null=True, blank=True)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
-    education = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='Student')
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
-    is_verified = models.BooleanField(default=False)
-    last_login = models.DateTimeField(auto_now=True)
+    is_verified = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.name
+
 
 
 
@@ -46,3 +36,10 @@ class OTP(models.Model):
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
    
+   
+class BlacklistedToken(models.Model):
+    token = models.TextField(unique=True)
+    blacklisted_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.token

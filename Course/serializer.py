@@ -2,14 +2,14 @@ from rest_framework import serializers
 from .models import Course,StudentCourse
 from category.models import Category
 from instructor.models import Instructor
-from User.models import User
+from student.models import Student
 
 
 
 class CourseSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     instructor = serializers.PrimaryKeyRelatedField(queryset=Instructor.objects.all())
-    student = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    student = serializers.PrimaryKeyRelatedField(queryset=Student.objects.all())
 
     class Meta:
         model = Course

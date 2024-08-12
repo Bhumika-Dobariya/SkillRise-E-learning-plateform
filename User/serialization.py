@@ -6,16 +6,15 @@ from .models import OTP
 from uuid import UUID
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
+
+        
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'user_type', 'email', 'name', 'password', 'date_of_birth', 'phone_number', 'address', 'gender', 'education', 'is_active', 'is_deleted', 'is_verified', 'last_login']
+        fields = ['id', 'email', 'name', 'password', 'role', 'is_active', 'is_deleted', 'is_verified', 'created_at', 'updated_at']
         extra_kwargs = {
-            'id': {'read_only': True},
-            'password': {'write_only': True}, 
-            'last_login': {'read_only': True},
+            'password': {'write_only': True},
         }
-      
       
 class OTPSerializer(serializers.ModelSerializer):
     class Meta:
