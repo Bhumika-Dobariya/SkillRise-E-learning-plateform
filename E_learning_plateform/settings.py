@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'Module',
     'Lesson',
     'enrollment',
-    'student'
+    'student',
+    'quize'
    
 
 ]
