@@ -92,6 +92,7 @@ def get_quizzes_by_module(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+
 @api_view(["GET"])
 def get_quizzes_by_instructor(request):
     instructor_id = request.query_params.get('instructor_id')

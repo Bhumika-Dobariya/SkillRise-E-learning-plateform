@@ -46,11 +46,24 @@ INSTALLED_APPS = [
     'Lesson',
     'enrollment',
     'student',
-    'quize'
+    'quize',
+    'notification',
+    'channels',
    
 
 ]
 
+
+ASGI_APPLICATION = 'E_learning_plateform.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 """REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -59,6 +72,9 @@ INSTALLED_APPS = [
         'rest_framework.permissions.IsAuthenticated',
     ),
 }"""
+
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
