@@ -31,6 +31,16 @@ urlpatterns = [
     path('enrollment/', include('enrollment.urls')),
     path('quize/', include('quize.urls')),
     path('notification/', include('notification.urls')),
+    path('question/', include('question.urls')),
+    path('answer/', include('answer.urls')),
+    path('subscription/', include('subscription.urls')),
+    path('studentscore/', include('studentscore.urls')),
+    path('payment/', include('payment.urls')),
+
+
+
+
+
     
 
 ]

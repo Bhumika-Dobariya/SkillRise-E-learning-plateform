@@ -49,7 +49,12 @@ INSTALLED_APPS = [
     'quize',
     'notification',
     'channels',
-   
+    'question',
+    'answer',
+    'subscription',
+    'studentscore',
+    'payment'
+
 
 ]
 
