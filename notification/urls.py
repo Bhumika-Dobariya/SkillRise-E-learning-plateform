@@ -3,6 +3,7 @@ from . import views
 from . import consumers
 
 urlpatterns = [
+    path('ws/notifications/<uuid:student_id>/', consumers.NotificationConsumer.as_asgi()),
     path('create_notification/', views.create_notification, name='create_notification'),
     path('notifications/', views.get_notification_by_id, name='get_notification_by_id'),  
     path('notifications/all/', views.get_all_notifications, name='get_all_notifications'),

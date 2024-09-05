@@ -11,7 +11,7 @@ ALGORITHM = os.environ.get('ALGORITHM', 'HS256')
 def get_token(user_id):
     payload = {
         "user_id": str(user_id), 
-        "exp": datetime.utcnow() + timedelta(minutes=30), 
+        "exp": datetime.utcnow() + timedelta(minutes=530), 
     }
     access_token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return access_token

@@ -69,14 +69,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-"""REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-}"""
 
 
 
@@ -186,4 +178,5 @@ JWT_AUTH = {
     "JWT_EXPIRATION_DELTA": datetime.timedelta(minutes=60),
     "JWT_ALGORITHM": "HS256",
 }
+
 

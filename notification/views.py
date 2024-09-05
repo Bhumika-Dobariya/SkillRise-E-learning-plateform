@@ -10,6 +10,25 @@ from asgiref.sync import async_to_sync
 
 #___________________create notification_________________
 
+@api_view(["POST"])
+def create_notification(request):
+    data = request.data
+    serializer = NotificationSerializer(data=data)
+    
+    if serializer.is_valid():
+        notification = serializer.save()
+
+        student_id = notification.recipient.id
+        notification_id = str(notification.id)
+        message = notification.message
+        send_notification_to_student(student_id, notification_id, message)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 def send_notification_to_student(student_id, notification_id, message):
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
@@ -20,24 +39,6 @@ def send_notification_to_student(student_id, notification_id, message):
             'message': message
         }
     )
-
-@api_view(["POST"])
-def create_notification(request):
-    data = request.data
-    serializer = NotificationSerializer(data=data)
-    
-    if serializer.is_valid():
-        notification = serializer.save()
-        
-        # Send notification to WebSocket channel
-        student_id = notification.recipient.id
-        notification_id = str(notification.id)  
-        message = notification.message
-        send_notification_to_student(student_id, notification_id, message)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 #_________________get notification by id ________________

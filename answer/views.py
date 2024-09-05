@@ -5,8 +5,13 @@ from .models import Answer
 from .serializers import AnswerSerializer
 import uuid
 
+
+
+#___________________ create answer _________________________
+
 @api_view(["POST"])
 def create_answer(request):
+   
     serializer = AnswerSerializer(data=request.data)
     
     if serializer.is_valid():
@@ -15,8 +20,14 @@ def create_answer(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+#___________________ get answer by id _________________________
+
 @api_view(["GET"])
 def get_answer_by_id(request):
+
     answer_id = request.query_params.get('id')
     
     if not answer_id:
@@ -32,14 +43,27 @@ def get_answer_by_id(request):
     serializer = AnswerSerializer(answer)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
+#___________________ get all answers _________________________
+
 @api_view(["GET"])
 def get_all_answers(request):
+   
     answers = Answer.objects.all()
     serializer = AnswerSerializer(answers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
+
+#___________________ update answer _________________________
+
 @api_view(["PUT"])
 def update_answer(request):
+    
     answer_id = request.query_params.get('id')
     
     if not answer_id:
@@ -59,8 +83,14 @@ def update_answer(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+
+#___________________ delete answer _________________________
+
 @api_view(["DELETE"])
 def delete_answer(request):
+   
     answer_id = request.query_params.get('id')
     
     if not answer_id:
@@ -76,8 +106,15 @@ def delete_answer(request):
     answer.delete()
     return Response({"message": "Answer deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
+
+
+
+
+#___________________ get answers by question _________________________
+
 @api_view(["GET"])
 def get_answers_by_question(request):
+   
     question_id = request.query_params.get('question_id')
     
     if not question_id:
@@ -91,8 +128,15 @@ def get_answers_by_question(request):
     serializer = AnswerSerializer(answers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+
+
+
+#___________________ get answers by correctness _________________________
+
 @api_view(["GET"])
 def get_answers_by_correctness(request):
+   
     is_correct = request.query_params.get('is_correct')
 
     if is_correct is None:
@@ -106,15 +150,3 @@ def get_answers_by_correctness(request):
     answers = Answer.objects.filter(is_correct=is_correct)
     serializer = AnswerSerializer(answers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
-
-
-
-
-

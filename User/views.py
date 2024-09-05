@@ -16,6 +16,8 @@ import uuid
 from django.core.exceptions import ValidationError
 
 
+
+
 #_____________________ create user ________________________
 
 @api_view(["POST"])
@@ -31,9 +33,9 @@ def create_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
 #___________________ user login with OTP ___________________
-
-
 
 @api_view(["POST"])
 def user_login(request):
@@ -52,14 +54,14 @@ def user_login(request):
         if not user.is_active:
             return Response({"message": "User account is inactive"}, status=status.HTTP_403_FORBIDDEN)
         
-        OTP.objects.filter(user=user, is_active=True).update(is_active=False, is_deleted=True)  # Corrected to use the user field
+        OTP.objects.filter(user=user, is_active=True).update(is_active=False, is_deleted=True)
 
         otp_code = str(random.randint(100000, 999999))
         expiration_time = timezone.now() + timedelta(minutes=10)
 
         OTP.objects.create(
             id=uuid.uuid4(),
-            user=user,  # Corrected to use the user field
+            user=user, 
             otp=otp_code,
             expiration_time=expiration_time
         )
@@ -120,9 +122,7 @@ def verify_otp_and_login(request):
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
-#___________________user register___________________
-
-
+#___________________ user register ___________________
 
 @api_view(["POST"])
 def user_register(request):
@@ -131,7 +131,6 @@ def user_register(request):
     password = request.data.get("password")
     role = request.data.get("role")
     
-
     if not uname or not email or not password:
         return Response({"message": "Username, email, and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -140,11 +139,10 @@ def user_register(request):
     except User.DoesNotExist:
         hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode('utf-8')
         user = User.objects.create(
-            uname=uname,
+            name=uname,  
             email=email,
             password=hashed_password,
             role=role,
-           
         )
         token = get_token(user.id)  
         return Response({
@@ -165,10 +163,10 @@ def user_register(request):
         return Response({"message": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-   
+
+
+
 #_______________ get_user_by_id __________________
-
-
 
 @api_view(["GET"])
 def get_user_by_id(request):
@@ -188,8 +186,6 @@ def get_user_by_id(request):
 
 
 #__________________ get_user_by_token ________________
-
-
 
 @api_view(['GET'])
 def get_user_by_token(request):
@@ -215,13 +211,15 @@ def get_user_by_token(request):
     }, status=status.HTTP_200_OK)
                         
                         
-#_______________ get all user __________________
+#_______________ get_all_user __________________
 
 @api_view(["GET"])
 def get_all_user(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
+
+
 
 
 #______________ update_user_by_id ___________________
@@ -264,7 +262,10 @@ def update_user_by_token(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
 #____________ delete_user_by_id _________________
+
 
 @api_view(['DELETE'])
 def delete_user_by_id(request, id):
@@ -279,7 +280,9 @@ def delete_user_by_id(request, id):
     return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
+
 #______________ delete_user_by_token ___________________
+
 
 
 @api_view(['DELETE'])
@@ -297,7 +300,6 @@ def delete_user_by_token(request):
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     user.delete()
-
     return Response({'message': 'User account deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -392,5 +394,4 @@ def reset_password_by_token(request):
     db_user.save()
 
     return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
-
 
