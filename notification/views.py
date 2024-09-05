@@ -1,44 +1,38 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from .utils import send_sms
 from .models import Notification
-from .serializer import NotificationSerializer
-from uuid import UUID
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-
-
-#___________________create notification_________________
 
 @api_view(["POST"])
-def create_notification(request):
-    data = request.data
-    serializer = NotificationSerializer(data=data)
+def send_notification(request):
+    phone_number = request.data.get('phone_number')
+    message_body = request.data.get('message')
+    notification_type = request.data.get('notification_type')
     
-    if serializer.is_valid():
-        notification = serializer.save()
-
-        student_id = notification.recipient.id
-        notification_id = str(notification.id)
-        message = notification.message
-        send_notification_to_student(student_id, notification_id, message)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    if not phone_number or not message_body or not notification_type:
+        return Response({"error": "Phone number, message, and notification type are required"}, status=status.HTTP_400_BAD_REQUEST)
     
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-def send_notification_to_student(student_id, notification_id, message):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f'student_{student_id}',
-        {
-            'type': 'notification_message',
-            'id': notification_id,
-            'message': message
-        }
+    # Create and save the notification in the database
+    notification = Notification(
+        recipient=None,  # Update this if you have a recipient model or logic
+        message=message_body,
+        notification_type=notification_type,
+        phone_number=phone_number
     )
+    notification.save()
+    
+    try:
+        message_sid = send_sms(phone_number, message_body)
+        
+        return Response({
+            "message": "Notification sent successfully",
+            "message_sid": message_sid,
+            "notification_type": notification_type
+        }, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        notification.delete()
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #_________________get notification by id ________________

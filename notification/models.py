@@ -1,6 +1,6 @@
-
-import uuid
 from django.db import models
+from django.core.exceptions import ValidationError
+import uuid
 
 class Notification(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -17,6 +17,17 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)  # Adjust length if needed
+
+    def clean(self):
+        super().clean()
+        if self.phone_number:
+            if not self.phone_number.startswith('+'):
+                raise ValidationError('Phone number must start with "+"')
+            if len(self.phone_number) != 13:  
+                raise ValidationError('Phone number must be exactly 13 characters long (including "+91").')
+            if not self.phone_number[1:].isdigit():
+                raise ValidationError('Phone number must contain only digits after the "+".')
 
     class Meta:
         ordering = ['-created_at']
