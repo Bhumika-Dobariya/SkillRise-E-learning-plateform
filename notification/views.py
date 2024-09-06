@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from .utils import send_sms
 from .models import Notification
+from uuid import UUID
+from .serializer import NotificationSerializer
+
 
 @api_view(["POST"])
 def send_notification(request):
